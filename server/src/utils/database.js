@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 mongoose.set('strictQuery', false)
 
-async function connect() {
+module.exports.connect = async () => {
     try {
         const uri = `mongodb+srv://${encodeURIComponent(process.env.DATABASE_USERNAME)}:${encodeURIComponent(process.env.DATABASE_PASSWORD)}@${process.env.DATABASE_STRING}`
         await mongoose.connect(uri)
@@ -11,5 +11,3 @@ async function connect() {
         throw new Error(err)
     }
 }
-
-module.exports = { connect };

@@ -1,20 +1,22 @@
-module.exports.validateEmail = (email) => {
+export const validateEmail = (email) => {
     email = email.trim()
-    if (!email || !email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
+    if (!email || email.length > 254 || !email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
         return 'Enter a valid email address.'
     }
     return false
 }
 
-module.exports.validateFullName = (fullName) => {
+export const validateFullName = (fullName) => {
     fullName = fullName.trim()
     if (!fullName) {
         return 'Enter a valid name.'
+    } else if (fullName.length > 50) {
+        return 'Name should not exceed 50 characters.'
     }
     return false
 }
 
-module.exports.validateUsername = (username) => {
+export const validateUsername = (username) => {
     username = username.trim()
     if (!username) {
         return 'Enter a valid username.'
@@ -23,12 +25,12 @@ module.exports.validateUsername = (username) => {
     } else if (username.length > 15) {
         return 'Username should not me more than 15 characters.'
     } else if (!username.match(/^[a-zA-Z0-9\_.]+$/)) {
-        return 'Username can only contain letters, numbers and the symbols _ .'
+        return 'Usernames can only use letters, numbers, underscores and periods.'
     }
     return false
 }
 
-module.exports.validatePassword = (password) => {
+export const validatePassword = (password) => {
     if (!password) {
         return 'Enter a valid password.'
     } else if (password.length < 6) {
@@ -40,14 +42,14 @@ module.exports.validatePassword = (password) => {
     return false
 }
 
-module.exports.validateBio = (bio) => {
+export const validateBio = (bio) => {
     if (bio.length > 130) {
         return 'Bio should not be more than 120 characters.'
     }
     return false
 }
 
-module.exports.validateLink = (link) => {
+export const validateLink = (link) => {
     link = link.trim()
     if (!link.match(/^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/)) {
         return 'Enter a valid link'

@@ -1,11 +1,9 @@
-console.clear()
-
+console.log('___________________________________________________________________');
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 require('./utils/database').connect()
-
 const app = express()
 const PORT = process.env.PORT || 9000
 

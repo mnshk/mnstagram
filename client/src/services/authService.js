@@ -36,7 +36,7 @@ export const ResetPassword = async ({ usernameOrEmail }) => {
         const res = await api.get('/auth/passwordrReset', {
             usernameOrEmail,
         });
-        return res.data
+        return res.data;
     }
     catch (err) {
         return err

@@ -101,7 +101,7 @@ function PasswordResetForm({ setView }: { setView: React.Dispatch<React.SetState
             </div>
 
             <div className="px-10 pt-5 text-xs text-center text-zinc-500">
-              Enter your email address or username, and we'll send you a verification code to get back into your account.
+              Enter your email address or username, and we&apos;ll send you a verification code to get back into your account.
             </div>
 
             <form onSubmit={onSubmit} className="w-full p-10 pt-6 pb-4">

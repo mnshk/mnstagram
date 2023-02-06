@@ -50,7 +50,7 @@ function SignupForm({ setView }: { setView: React.Dispatch<React.SetStateAction<
     }
 
     // Form values
-    const formInitial: Form = { email: 'mk6229478@gmail.com', fullName: 'Munish Kumar', username: 'munish', password: '123456', confirmationToken: '' }
+    const formInitial: Form = { email: '', fullName: '', username: '', password: '', confirmationToken: '' }
     const errorsInitial = { loading: false, message: '', email: '', fullName: '', username: '', password: '' }
     const [form, setForm] = useState<Form>(formInitial);
     const [errors, setErrors] = useState<Errors>(errorsInitial)

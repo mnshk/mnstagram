@@ -44,7 +44,7 @@ function PasswordResetForm({ setView }: { setView: React.Dispatch<React.SetState
   }
 
   // Form values
-  const formInitial: Form = { username: 'mk6229478@gmail.com', confirmationToken: '' }
+  const formInitial: Form = { username: '', confirmationToken: '' }
   const errorsInitial = { loading: false, message: '', username: '' }
   const [form, setForm] = useState<Form>(formInitial);
   const [errors, setErrors] = useState<Errors>(errorsInitial)

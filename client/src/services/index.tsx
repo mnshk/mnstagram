@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios'
 
 export const api = axios.create({
-    baseURL: 'http://192.168.1.5:9000',
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
 })
 
 export function handleRequestError(err: AxiosError) {

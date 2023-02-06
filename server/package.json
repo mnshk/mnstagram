@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node dist/index.js",
+    "build":"",
     "dev": "nodemon dist/index.js"
   },
   "author": "",

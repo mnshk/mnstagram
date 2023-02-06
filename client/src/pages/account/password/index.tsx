@@ -25,8 +25,7 @@ export default function Page() {
       <Head>
         <title>Reset Password &#x2022; Mnstagram</title>
       </Head>
-      {/* {view} */}
-      <SuccessScreen />
+      {view}
     </>
   )
 }

@@ -1,21 +1,11 @@
-import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
-
 import bcrypt from 'bcrypt'
-
-import User from '../models/User.js'
-import ConfirmationCode from '../models/ConfirmationCode.js'
-
-import { validateEmail, validateFullName, validateUsername, validatePassword, validateConfirmationCode } from '../utils/validation.js'
+import { validateEmail, validateFullName, validateUsername, validatePassword } from '../utils/validation.js'
 import { sendConfirmationEmail } from '../utils/controllerUtils.js'
 import { RequestHandler } from 'express'
 import RequestError from '../utils/requestError.js'
-
-declare module "jsonwebtoken" {
-    export interface IConfirmationToken extends jwt.JwtPayload {
-        id: string
-    }
-}
+import User from '../models/User.js'
+import ConfirmationCode from '../models/ConfirmationCode.js'
 
 export const signup: RequestHandler = async (req, res, next) => {
 
@@ -34,7 +24,7 @@ export const signup: RequestHandler = async (req, res, next) => {
 
     if (confirmationToken) {
 
-        const decodedToken = <jwt.IConfirmationToken>jwt.verify(confirmationToken, process.env.JWT_SECRET as string)
+        const decodedToken = <jwt.JwtPayload>jwt.verify(confirmationToken, process.env.JWT_SECRET as string)
 
         if (!decodedToken) {
             return res.status(400).send({ errors: { message: "Invalid or expired code. Try again." } })
@@ -63,7 +53,7 @@ export const signup: RequestHandler = async (req, res, next) => {
         let result = await codeDoc.save()
         await sendConfirmationEmail(username, email, code)
         let token = jwt.sign({ id: result._id }, process.env.JWT_SECRET as string, { expiresIn: '1d' })
-        return res.send({ data: { token } })
+        return res.send({ data: { token, email } })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
@@ -86,32 +76,22 @@ export const passwordReset: RequestHandler = async (req, res, next) => {
 
     const { username, password, confirmationCode, confirmationToken } = req.body;
 
-    let errors = {
-        username: username ? false : 'This field is required.',
-    }
+    let errors = { username: username ? false : 'This field is required.' }
+    if (errors.username) return res.status(400).send({ errors })
 
-    if (errors.username) {
-        return res.status(400).send({ errors })
-    }
-
+    // If there's a token
     if (confirmationToken) {
 
-        const decodedToken = <jwt.IConfirmationToken>jwt.verify(confirmationToken, process.env.JWT_SECRET as string)
+        if (!password) return res.status(400).send({ errors: { password: 'This field is required' } })
+        // Decode token
+        const decodedToken = <jwt.JwtPayload>jwt.verify(confirmationToken, process.env.JWT_SECRET as string)
+        if (!decodedToken) return res.status(400).send({ errors: { message: "Invalid or expired code. Try again." } })
 
-        if (!decodedToken) {
-            return res.status(400).send({ errors: { message: "Invalid or expired code. Try again. [decode]" } })
-        }
-
+        // Find and match code
         const result = await ConfirmationCode.findOne({ _id: decodedToken.id })
+        if (!result || result.code != confirmationCode) return res.status(400).send({ errors: { message: "Invalid or expired code. Try again." } })
 
-        if (!result || result.code != confirmationCode) {
-            return res.status(400).send({ errors: { message: "Invalid or expired code. Try again. [match]" } })
-        }
-        if (password)
-            await ConfirmationCode.deleteOne({ _id: decodedToken.id })
-        else
-            return res.send({ data: true })
-
+        await ConfirmationCode.deleteOne({ _id: decodedToken.id })
     }
 
     let user = await User.findOne({
@@ -121,69 +101,31 @@ export const passwordReset: RequestHandler = async (req, res, next) => {
         ]
     })
 
+    // Check if the user exists, then send confirmation code over email
     if (!confirmationToken) {
+        if (!user) return res.status(400).send({ errors: { username: "No account found. Try again." } })
 
-        if (!user) {
-            return res.status(400).send({ errors: { username: "No account found. Try again." } })
-        }
-
-        let email = user.email
-        let usernameFetched = user.username
-
-        // let code = Math.floor(100000 + Math.random() * 900000)
-        let code = 111111
+        let { email, username } = user
+        let code = Math.floor(100000 + Math.random() * 900000)
+        // let code = 111111
         let codeDoc = new ConfirmationCode({ code })
         let result = await codeDoc.save()
-        // await sendConfirmationEmail(usernameFetched, email, code)
+        await sendConfirmationEmail(username, email, code)
         let token = jwt.sign({ id: result._id }, process.env.JWT_SECRET as string, { expiresIn: '1d' })
         return res.send({ data: { token, email } })
     }
 
+    // If there was a confirmation token then it means the request was for resetting password
     if (validatePassword(password)) {
         return res.status(400).send({ errors: { password: "Enter a valid password." } })
     }
 
+    if (!user) return res.status(400).send({ errors: { username: "No account found. Try again." } })
     const hashedPassword = await bcrypt.hash(password, 10)
     user.password = hashedPassword
-    await user?.save()
+    await user.save()
     return res.send({ data: true })
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// module.exports.requireAuth = async (req, res, next) => {
-
-//     const { authorization } = req.headers
-
-//     if (!authorization) {
-//         return res.status(401).send({ errors: { message: 'Not authorized.' } })
-//     }
-
-//     try {
-//         const user = await jwt.verify(authorization, process.env.JWT_SECRET)
-//         res.locals.user = user
-//         return next()
-
-//     } catch (err) {
-//         return res.status(401).send({ errors: { message: err.message } })
-//     }
-
-// }
 
 export const login: RequestHandler = async (req, res, next) => {
 
@@ -193,14 +135,14 @@ export const login: RequestHandler = async (req, res, next) => {
 
     if (authorization) {
         try {
-            const decoded = jwt.verify(authorization, process.env.JWT_SECRET as string)
+            const decoded = <jwt.JwtPayload>jwt.verify(authorization, process.env.JWT_SECRET as string)
             user = await User.findOne({ _id: decoded.id })
         } catch (err) {
-            return res.status(401).send({ errors: { message: 'Something went wrong. Please try again.' } })
+            return res.status(500).send({ errors: { message: 'Something went wrong. Please try again.' } })
         }
     } else {
         if (!username || !password) {
-            return res.status(401).send({ errors: { message: 'Invalid credentials.' } })
+            return res.status(400).send({ errors: { message: 'Invalid credentials.' } })
         }
         try {
             user = await User.findOne({ username: username })
@@ -219,45 +161,16 @@ export const login: RequestHandler = async (req, res, next) => {
         }
     }
 
-    console.log('USER', user);
-
-    setTimeout(() => {
-        res.status(500).send({ errors: { message: 'An unexpected error ocurred, please try again later. [S]' } })
-    }, 3000);
-
-    // setTimeout(() => {
-    // }, 3000)
-
-
-    // res.send({
-    //     data: {
-    //         user: {
-    //             email: user?.email,
-    //             username: user?.username,
-    //             avatar: user?.avatar,
-    //         },
-    //         token: jwt.sign({ id: user._id }, process.env.JWT_SECRET as string)
-    //     }
-    // })
-
+    if (user) {
+        res.send({
+            data: {
+                user: {
+                    email: user?.email,
+                    username: user?.username,
+                    avatar: user?.avatar,
+                },
+                token: jwt.sign({ id: user._id }, process.env.JWT_SECRET as string)
+            }
+        })
+    }
 }
-
-// module.exports.verifyUser = async (req, res, next) => {
-//     const { token } = req.body
-
-//     if (!token) return res.status(400).send({ errors: { message: 'No token.' } })
-
-//     try {
-//         const confirmationToken = await ConfirmationToken.findOne({ token })
-//         if (!confirmationToken) return res.status(404).send({ errors: { message: 'Invalid or expired confirmation link.' } })
-
-//         await User.updateOne({ _id: confirmationToken.user }, { confirmed: true })
-//         await ConfirmationToken.deleteOne({ token })
-
-//         return res.send({ data: { message: true } })
-
-//     } catch (err) {
-//         next(err)
-//     }
-
-// }
